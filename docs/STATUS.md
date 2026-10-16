@@ -4,13 +4,15 @@
 
 ## 当前状态
 
-基础逻辑已实现并本地验证：动作 JSON Schema、坐标转换、业务判定、执行预算、轨迹/报告、固定评测分母与模拟演示。独立审查发现的四项重要问题已有回归测试与修复；29 项测试通过，TypeScript 检查通过。初始化文档提交 `71267b2` 已上传远端 main；功能分支准备通过 PR 同步。
+基础逻辑已实现并验证：动作 JSON Schema、坐标转换、业务判定、执行预算、轨迹/报告、固定评测分母与模拟演示。独立审查发现的四项重要问题已有回归测试与修复；29 项测试与 TypeScript 检查通过。
+
+代码已上传 `codex/bootstrap-foundation`，草稿 PR：[PR #1](https://github.com/luxleader/GUI-Agent/pull/1)。代码提交 `290df5d` 的 [GitHub Actions](https://github.com/luxleader/GUI-Agent/actions/runs/38863320996) 已在 Linux 环境通过。初始化文档提交 `71267b2` 位于远端 main，功能代码尚未合并到 main。
 
 ## 里程碑
 
 | 项目 | 状态 | 完成证据 |
 | --- | --- | --- |
-| 开发约定、变更记录、版本回溯 | 初始化完成，持续执行 | docs/changes/2026-10-16-001-bootstrap.md |
+| 开发约定、变更记录、版本回溯 | 初始化完成，持续执行 | docs/changes/2026-10-16-004-github-sync.md |
 | 本地判定、预算与轨迹闭环 | 基础实现与审查修复，本地模拟验证 | docs/changes/2026-10-16-003-review-fixes.md |
 | Midscene 与 Android 真机/模拟器联调 | 待实现 | 尚无 |
 | 本地商城、独立状态校验、故障版本 | 待实现 | 尚无 |
