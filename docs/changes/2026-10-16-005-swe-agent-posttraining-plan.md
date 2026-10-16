@@ -17,7 +17,8 @@
 - 查阅 SWE-Gym、SWE-bench 数据集与 harness、OpenHands、TRL 官方仓库/文档，记录当前公开信息和链接。
 - 只修改 Markdown 计划文档与项目维护说明；未修改 Agent 代码，未下载模型/数据，未运行容器 benchmark 或训练模型。
 - 本轮未运行代码测试；没有 GPU 训练或 SWE-bench 实测分数。
-- 当前分支以远端 main 为基线；GitHub 同步结果将在推送和核验后补充。
+- 提交 b69151ec2058ce083968b2770de0da9464c94310 已推送到 codex/swe-agent-posttraining-plan，使用 git ls-remote 核验远端 SHA 一致。
+- 草稿 PR [#2](https://github.com/luxleader/GUI-Agent/pull/2) 已创建；PR #1 和 GUI 分支保持不变。
 
 ## 局限
 

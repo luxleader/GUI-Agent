@@ -6,7 +6,7 @@
 
 用户已选择 SWE 编程 Agent 后训练项目。方案名称为 PatchPilot，研究在真实 Python 仓库 issue 修复中比较 Base、SFT、DPO、GRPO，并评估失败导向轨迹、奖励抗投机和执行成本。
 
-项目处于计划阶段：新方向尚无 Agent 代码、Docker 任务运行、训练权重、GPU 训练或 SWE-bench 实测结果。本分支已建立完整设计和分阶段计划，待同步到指定 GitHub 仓库并供用户审阅。
+项目处于计划阶段：新方向尚无 Agent 代码、Docker 任务运行、训练权重、GPU 训练或 SWE-bench 实测结果。方案已推送到分支 codex/swe-agent-posttraining-plan，并提交为草稿 [PR #2](https://github.com/luxleader/GUI-Agent/pull/2) 供审阅；远端 SHA 与本地提交一致。
 
 ## 里程碑
 
