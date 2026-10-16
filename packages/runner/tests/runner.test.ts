@@ -78,10 +78,30 @@ test('aborts a stalled policy without waiting indefinitely', async () => {
   let signalSeen: AbortSignal | undefined;
   const stalled: Policy = { async next(_input, signal) { signalSeen = signal; return new Promise<Action>(() => {}); } };
   const result = await runCase(checkout, stalled, setup.driver, setup.oracle, { runId: 'run-1', maxDurationMs: 25 });
-  assert.equal(result.status, 'AGENT_BLOCKED');
+  assert.equal(result.status, 'INFRA_ERROR');
   assert.equal(signalSeen?.aborted, true);
   assert.equal(setup.count, 0);
   assert.equal(setup.closed, true);
+});
+
+test('separates model service failure from invalid agent output', async () => {
+  const setup = rig();
+  const unavailable: Policy = { async next() { throw new Error('Provider connection refused'); } };
+  const result = await runCase(checkout, unavailable, setup.driver, setup.oracle, { runId: 'run-1' });
+  assert.equal(result.status, 'INFRA_ERROR');
+  assert.equal(setup.count, 0);
+});
+
+test('does not dispatch an action when synchronous policy work exceeds the deadline', async () => {
+  const setup = rig();
+  const blocking: Policy = { async next() {
+    const end = performance.now() + 40;
+    while (performance.now() < end) { /* deliberately blocks the timer event loop */ }
+    return { type: 'tap', x: 0.5, y: 0.5 };
+  } };
+  const result = await runCase(checkout, blocking, setup.driver, setup.oracle, { runId: 'run-1', maxDurationMs: 15 });
+  assert.equal(setup.count, 0);
+  assert.notEqual(result.status, 'PASS');
 });
 
 test('does not expose private oracle expectations to the policy', async () => {

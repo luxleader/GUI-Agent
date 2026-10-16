@@ -53,3 +53,14 @@ test('uses integer cents and rejects impossible discounts', () => {
   assert.throws(() => payableCents(29900.5, 3000), /cent/i);
   assert.throws(() => payableCents(100, 101), /cent/i);
 });
+
+test('missing, null, or nonprimitive assertion values cannot produce pass', () => {
+  for (const value of [undefined, null, {}, []]) {
+    const malformed = evidence();
+    Object.assign(malformed.checks[0], { expected: value, observed: value });
+    assert.throws(() => assessCase(testCase, malformed), /evidence/i);
+  }
+  const malformed = evidence();
+  Object.assign(malformed.checks[0], { preconditionsMet: 'true' });
+  assert.throws(() => assessCase(testCase, malformed), /evidence/i);
+});

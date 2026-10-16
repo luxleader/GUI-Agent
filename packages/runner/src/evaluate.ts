@@ -1,16 +1,21 @@
 import type { RunResult } from './contracts.ts';
-export interface ScheduledAttempt { id: string; cohort: 'healthy' | 'mutant'; expectedAssertionId?: string; }
+export interface ScheduledAttempt { id: string; runId: string; caseId: string; cohort: 'healthy' | 'mutant'; expectedAssertionId?: string; }
 export interface CompletedAttempt { attemptId: string; result: RunResult; }
 export function aggregateRuns(scheduled: ScheduledAttempt[], completed: CompletedAttempt[]) {
   const ids = new Set(scheduled.map(item => item.id));
   if (ids.size !== scheduled.length) throw new Error('Duplicate scheduled attempt');
-  if (scheduled.some(item => !item.id || (item.cohort === 'mutant' && !item.expectedAssertionId))) {
+  if (new Set(scheduled.map(item => item.runId)).size !== scheduled.length) throw new Error('Duplicate scheduled run identity');
+  if (scheduled.some(item => !item.id || !item.runId || !item.caseId || (item.cohort === 'mutant' && !item.expectedAssertionId))) {
     throw new Error('Invalid attempt definition');
   }
   const results = new Map<string, RunResult>();
   for (const item of completed) {
     if (results.has(item.attemptId)) throw new Error('Duplicate completed attempt');
     if (!ids.has(item.attemptId)) throw new Error('Completed attempt was not scheduled');
+    const attempt = scheduled.find(attempt => attempt.id === item.attemptId)!;
+    if (item.result.runId !== attempt.runId || item.result.caseId !== attempt.caseId) {
+      throw new Error('Run or case identity does not match scheduled attempt');
+    }
     results.set(item.attemptId, item.result);
   }
   let missing = 0, mutants = 0, healthy = 0, detections = 0, falsePositives = 0, passes = 0;

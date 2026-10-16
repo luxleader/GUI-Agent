@@ -13,11 +13,13 @@ export function assessCase(testCase: TestCase, evidence: OracleEvidence): Assess
     throw new Error('Required assertions must be nonempty and unique');
   }
   const seen = new Set<string>();
+  const validValue = (value: unknown): boolean => typeof value === 'string' || typeof value === 'boolean'
+    || (typeof value === 'number' && Number.isFinite(value));
   for (const check of evidence.checks) {
     if (!ids.has(check.assertionId) || seen.has(check.assertionId)
         || check.runId !== evidence.runId || check.caseId !== testCase.id
         || !check.evidenceRef.trim() || !evidence.runId.trim()
-        || [check.expected, check.observed].some(value => typeof value === 'number' && !Number.isFinite(value))) {
+        || !validValue(check.expected) || !validValue(check.observed) || typeof check.preconditionsMet !== 'boolean') {
       throw new Error('Invalid assertion evidence or run binding');
     }
     seen.add(check.assertionId);

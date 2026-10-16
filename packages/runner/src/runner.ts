@@ -1,6 +1,6 @@
 import type { Action, Observation, OracleEvidence, RunResult, TestCase, TraceStep } from './contracts.ts';
 import { assessCase } from './oracle.ts';
-import { parseAction } from './validation.ts';
+import { ActionValidationError, parseAction } from './validation.ts';
 
 export interface Driver {
   mode: Observation['mode'];
@@ -36,6 +36,18 @@ export async function runCase(testCase: TestCase, policy: Policy, driver: Driver
     mode: driver.mode, steps: [], incidents: [], metrics: { actions: 0, policyCalls: 0, elapsedMs: 0 } };
   const controller = new AbortController();
   const deadline = setTimeout(() => controller.abort(new Error('Run deadline exceeded')), duration);
+  function checkDeadline(): void {
+    if (performance.now() - started >= duration && !controller.signal.aborted) {
+      controller.abort(new Error('Run deadline exceeded'));
+    }
+    controller.signal.throwIfAborted();
+  }
+  async function withinBudget<T>(work: () => Promise<T>): Promise<T> {
+    checkDeadline();
+    const value = await cancellable(work, controller.signal);
+    checkDeadline();
+    return value;
+  }
   let phase = 'observe';
   let quarantine = false;
   let observation: Observation | undefined;
@@ -48,24 +60,25 @@ export async function runCase(testCase: TestCase, policy: Policy, driver: Driver
   }
   async function inspect(): Promise<void> {
     phase = 'oracle';
-    const evidence = await cancellable(() => oracle(structuredClone(frozenCase), structuredClone(result.steps), controller.signal), controller.signal);
+    const evidence = await withinBudget(() => oracle(structuredClone(frozenCase), structuredClone(result.steps), controller.signal));
     if (evidence.runId !== options.runId) throw new Error('Oracle evidence belongs to a different run');
     Object.assign(result, assessCase(frozenCase, evidence));
   }
   try {
-    observation = verifyObservation(await cancellable(() => driver.observe(controller.signal), controller.signal));
+    observation = verifyObservation(await withinBudget(() => driver.observe(controller.signal)));
     while (result.metrics.actions < maxActions) {
       phase = 'policy';
       result.metrics.policyCalls++;
       const policyObservation = observation;
-      const raw = await cancellable(() => policy.next({ goal: frozenCase.goal,
-        observation: structuredClone(policyObservation), history: structuredClone(result.steps) }, controller.signal), controller.signal);
+      const raw = await withinBudget(() => policy.next({ goal: frozenCase.goal,
+        observation: structuredClone(policyObservation), history: structuredClone(result.steps) }, controller.signal));
       const action = parseAction(raw);
       if (action.type === 'finish') { await inspect(); break; }
       phase = 'execute';
+      checkDeadline();
       result.metrics.actions++;
       const before = structuredClone(observation);
-      observation = verifyObservation(await cancellable(() => driver.execute(action, before.id, controller.signal), controller.signal));
+      observation = verifyObservation(await withinBudget(() => driver.execute(action, before.id, controller.signal)));
       result.steps.push({ index: result.steps.length, action, before, after: structuredClone(observation) });
       await inspect();
       if (result.status === 'PASS' || result.status === 'PRODUCT_FAIL' || result.status === 'AGENT_BLOCKED') break;
@@ -77,7 +90,7 @@ export async function runCase(testCase: TestCase, policy: Policy, driver: Driver
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     result.incidents.push({ phase, message });
-    result.status = phase === 'policy' ? 'AGENT_BLOCKED' : 'INFRA_ERROR';
+    result.status = error instanceof ActionValidationError ? 'AGENT_BLOCKED' : 'INFRA_ERROR';
     result.reason = message;
     quarantine = phase === 'execute' || phase === 'observe';
   } finally {
